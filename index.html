@@ -7,6 +7,8 @@
     <title>Колесо Фортуны</title>
     <!-- Подключаем SDK Telegram Web App -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
+    <!-- Подключаем плеер для Lottie (dotlottie / lottie-web) -->
+    <script src="https://unpkg.com/@dotlottie/player-component@latest/dist/dotlottie-player.mjs" type="module"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -237,6 +239,36 @@
             opacity: 0.8;
         }
 
+        /* Экран загрузки */
+        .preloader {
+            position: fixed;
+            top: 0; left: 0; right: 0; bottom: 0;
+            background: #171719;
+            z-index: 9999;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            transition: opacity 0.5s ease-out;
+        }
+
+        .preloader.hidden {
+            opacity: 0;
+            pointer-events: none;
+        }
+
+        .spinner {
+            width: 50px;
+            height: 50px;
+            border: 4px solid rgba(255, 255, 255, 0.1);
+            border-left-color: #00a8ff;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            100% { transform: rotate(360deg); }
+        }
+
         /* Фоновые звездочки-искорки */
         .bg-stars-container {
             position: absolute;
@@ -284,6 +316,11 @@
 
 <body>
 
+    <!-- Прелоадер -->
+    <div class="preloader" id="preloader">
+        <div class="spinner"></div>
+    </div>
+
     <!-- Контейнер для фоновых звездочек-искорок -->
     <div class="bg-stars-container" id="bgStars"></div>
 
@@ -321,6 +358,15 @@
 
     <div class="modal-overlay" id="modal">
         <div class="modal-content">
+            <!-- Анимация Lottie -->
+            <dotlottie-player 
+                src="https://raw.githubusercontent.com/vovashmyhol/koleso/refs/heads/main/%D0%BF%D1%80%D0%BE%D0%B8%D0%B3%D1%80%D1%8B%D1%88.json" 
+                background="transparent" 
+                speed="1" 
+                style="width: 200px; height: 200px; margin: 0 auto 15px auto;" 
+                loop 
+                autoplay>
+            </dotlottie-player>
             <div class="modal-title">Вы ничего не выиграли 😢</div>
             <button class="modal-btn" onclick="closeModal()">Закрыть</button>
         </div>
@@ -329,7 +375,23 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
+        // Устанавливаем цвет шапки и фона Mini App в цвет нашего сайта (#171719)
+        if (tg.setHeaderColor) {
+            tg.setHeaderColor('#171719');
+        }
+        if (tg.setBackgroundColor) {
+            tg.setBackgroundColor('#171719');
+        }
         tg.ready();
+
+        // Логика скрытия прелоадера после полной загрузки страницы (всех картинок, скриптов, Lottie и т.д.)
+        window.addEventListener('load', () => {
+            const preloader = document.getElementById('preloader');
+            // Небольшая задержка для плавности, чтобы гарантированно убрать экран загрузки
+            setTimeout(() => {
+                preloader.classList.add('hidden');
+            }, 300);
+        });
 
         const spinBtn = document.getElementById('spinBtn');
         const wheel = document.getElementById('wheel');
