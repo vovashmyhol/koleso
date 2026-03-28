@@ -7,8 +7,7 @@
     <title>Колесо Фортуны</title>
     <!-- Подключаем SDK Telegram Web App -->
     <script src="https://telegram.org/js/telegram-web-app.js"></script>
-    <!-- Подключаем плеер для Lottie (dotlottie / lottie-web) -->
-    <script src="https://unpkg.com/@dotlottie/player-component@latest/dist/dotlottie-player.mjs" type="module"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/lottie-web/5.12.2/lottie.min.js"></script>
     <style>
         * {
             box-sizing: border-box;
@@ -27,6 +26,51 @@
             align-items: center;
             height: 100vh;
             overflow: hidden;
+        }
+
+        /* Общие стили для игровых экранов */
+        .game-view {
+            display: none;
+            width: 100%;
+            height: 100vh;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .game-view.active {
+            display: flex;
+        }
+
+        /* Переключатель игр */
+        .game-switch {
+            position: fixed;
+            top: 20px;
+            left: 20px;
+            display: flex;
+            background: rgba(255, 255, 255, 0.05);
+            padding: 4px;
+            border-radius: 12px;
+            z-index: 100;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+
+        .switch-btn {
+            padding: 8px 16px;
+            border: none;
+            background: transparent;
+            color: rgba(255, 255, 255, 0.5);
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+
+        .switch-btn.active {
+            background: #00a8ff;
+            color: white;
+            box-shadow: 0 4px 10px rgba(0, 168, 255, 0.3);
         }
 
         .wheel-container {
@@ -50,10 +94,9 @@
 
         /* Верхняя плашка */
         .top-label {
-            position: absolute;
+            position: fixed;
             top: 20px;
-            left: 50%;
-            transform: translateX(-50%);
+            right: 20px;
             background: linear-gradient(135deg, #00a8ff, #0077ff);
             color: white;
             padding: 10px 24px;
@@ -75,14 +118,13 @@
         }
 
         .top-label:active {
-            transform: translateX(-50%) scale(0.95);
+            transform: scale(0.95);
         }
 
         .wheel {
             width: 100%;
             height: 100%;
             border-radius: 50%;
-            /* Градиент в точности как на фото, с немного замытыми краями у чёрного сектора */
             background: conic-gradient(from 0deg,
                     #ffca00 0deg, #ffca00 30deg,
                     #2a2a2d 40deg, #2a2a2d 140deg,
@@ -112,7 +154,6 @@
             position: absolute;
             top: 50%;
             left: 50%;
-            /* Позиционируем слева по центру фиолетового сектора */
             transform: translate(-50%, -50%) translate(-100px, 0);
             width: 55px;
             height: 55px;
@@ -148,8 +189,212 @@
             transform: translate(-50%, -50%) scale(0.92);
         }
 
+        /* Селектор подарков */
+        .gift-selector-wrap {
+            position: fixed;
+            top: 75px;
+            left: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            z-index: 100;
+        }
+
+        .selected-gift-circle {
+            width: 50px;
+            height: 50px;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+            overflow: hidden;
+        }
+
+        .selected-gift-circle:hover {
+            border-color: #00a8ff;
+            box-shadow: 0 0 15px rgba(0, 168, 255, 0.4);
+            transform: scale(1.05);
+        }
+
+        .selected-gift-circle img {
+            width: 70%;
+            height: 70%;
+            object-fit: contain;
+            filter: drop-shadow(0 0 5px rgba(255, 255, 255, 0.2));
+        }
+
+        .gift-dropdown {
+            position: absolute;
+            top: 55px;
+            width: 45px;
+            background: rgba(30, 30, 34, 0.95);
+            backdrop-filter: blur(10px);
+            border-radius: 25px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            padding: 8px 0;
+            gap: 10px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5);
+            opacity: 0;
+            transform: translateY(-10px) scale(0.9);
+            pointer-events: none;
+            transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+            max-height: 0;
+            overflow: hidden;
+        }
+
+        .gift-dropdown.active {
+            opacity: 1;
+            transform: translateY(0) scale(1);
+            pointer-events: all;
+            max-height: 400px;
+            overflow: visible;
+        }
+
+        .gift-option {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            background: rgba(255, 255, 255, 0.03);
+        }
+
+        .gift-option:hover {
+            background: rgba(0, 168, 255, 0.2);
+            transform: scale(1.2);
+        }
+
+        .gift-option img {
+            width: 70%;
+            height: 70%;
+            object-fit: contain;
+        }
+
+        /* Стили Скретча */
+        .scratch-grid-container {
+            width: 100%;
+            max-width: 360px;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .scratch-grid {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            grid-template-rows: repeat(4, 1fr);
+            gap: 10px;
+            width: 100%;
+            aspect-ratio: 3 / 4;
+        }
+
+        .modal-content {
+            background: #1e1e22;
+            padding: 30px;
+            border-radius: 30px;
+            width: 85%;
+            max-width: 320px;
+            text-align: center;
+            position: relative;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.5);
+            animation: modalPop 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+
+        #lottieContainer {
+            width: 180px;
+            height: 180px;
+            margin: 0 auto 10px;
+            display: none; /* Скрыто по умолчанию */
+        }
+
+        .scratch-card {
+            position: relative;
+            background: #2a2a2d;
+            border-radius: 12px;
+            overflow: hidden;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            border: 2px solid rgba(255, 255, 255, 0.05);
+            box-shadow: 0 4px 10px rgba(0, 0, 0, 0.2);
+            touch-action: none;
+        }
+
+        .scratch-card .prize-icon {
+            width: 70%;
+            height: 70%;
+            object-fit: contain;
+            z-index: 1;
+        }
+
+        .scratch-card canvas {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: 5;
+            cursor: crosshair;
+        }
+
+        .modal-code-container {
+            background: rgba(0, 0, 0, 0.4);
+            padding: 15px;
+            border-radius: 12px;
+            margin: 20px 0;
+            font-family: monospace;
+            font-size: 24px;
+            letter-spacing: 2px;
+            border: 1px dashed #00a8ff;
+            color: #ffca00;
+        }
+
+        .copy-success-tip {
+            font-size: 12px;
+            color: #00ff00;
+            margin-top: 5px;
+            display: none;
+        }
+
+        .scratch-footer {
+            width: 100%;
+            display: flex;
+            justify-content: center;
+            margin-top: 25px;
+        }
+
+        .scratch-instruction {
+            font-size: 12px;
+            color: rgba(255, 255, 255, 0.4);
+            margin-bottom: 15px;
+            text-align: center;
+            width: 100%;
+            letter-spacing: 0.3px;
+        }
+
+        .pay-btn {
+            width: 100%;
+            background: linear-gradient(135deg, #ffca00, #ff9900);
+            color: #171719;
+            box-shadow: 0 4px 15px rgba(255, 202, 0, 0.3);
+        }
+
         /* Крестообразные звездочки */
-        .star {
+        .star-fx {
             position: absolute;
             background: white;
             clip-path: polygon(35% 0, 65% 0, 65% 35%, 100% 35%, 100% 65%, 65% 65%, 65% 100%, 35% 100%, 35% 65%, 0 65%, 0 35%, 35% 35%);
@@ -159,21 +404,9 @@
         }
 
         @keyframes twinkle {
-            0% {
-                transform: scale(0);
-                opacity: 0;
-            }
-
-            50% {
-                transform: scale(1) rotate(45deg);
-                opacity: 1;
-                filter: drop-shadow(0 0 5px white);
-            }
-
-            100% {
-                transform: scale(0) rotate(90deg);
-                opacity: 0;
-            }
+            0% { transform: scale(0); opacity: 0; }
+            50% { transform: scale(1) rotate(45deg); opacity: 1; filter: drop-shadow(0 0 5px white); }
+            100% { transform: scale(0) rotate(90deg); opacity: 0; }
         }
 
         .modal-overlay {
@@ -187,7 +420,7 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            z-index: 100;
+            z-index: 200;
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.3s ease;
@@ -201,7 +434,7 @@
         .modal-content {
             background: #202022;
             padding: 30px;
-            border-radius: 20px;
+            border-radius: 24px;
             text-align: center;
             transform: scale(0.8) translateY(20px);
             transition: transform 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
@@ -215,58 +448,29 @@
         }
 
         .modal-title {
-            font-size: 24px;
+            font-size: 22px;
             margin-bottom: 25px;
             color: white;
             font-weight: 700;
+            line-height: 1.4;
         }
 
         .modal-btn {
-            padding: 12px 30px;
+            padding: 14px 30px;
             background: #00a8ff;
             color: white;
             border: none;
-            border-radius: 12px;
+            border-radius: 14px;
             font-size: 18px;
             cursor: pointer;
             font-weight: bold;
             box-shadow: 0 4px 15px rgba(0, 168, 255, 0.3);
-            transition: opacity 0.2s, transform 0.2s;
+            transition: all 0.2s;
         }
 
         .modal-btn:active {
             transform: scale(0.95);
             opacity: 0.8;
-        }
-
-        /* Экран загрузки */
-        .preloader {
-            position: fixed;
-            top: 0; left: 0; right: 0; bottom: 0;
-            background: #171719;
-            z-index: 9999;
-            display: flex;
-            justify-content: center;
-            align-items: center;
-            transition: opacity 0.5s ease-out;
-        }
-
-        .preloader.hidden {
-            opacity: 0;
-            pointer-events: none;
-        }
-
-        .spinner {
-            width: 50px;
-            height: 50px;
-            border: 4px solid rgba(255, 255, 255, 0.1);
-            border-left-color: #00a8ff;
-            border-radius: 50%;
-            animation: spin 1s linear infinite;
-        }
-
-        @keyframes spin {
-            100% { transform: rotate(360deg); }
         }
 
         /* Фоновые звездочки-искорки */
@@ -316,58 +520,81 @@
 
 <body>
 
-    <!-- Прелоадер -->
-    <div class="preloader" id="preloader">
-        <div class="spinner"></div>
-    </div>
-
     <!-- Контейнер для фоновых звездочек-искорок -->
     <div class="bg-stars-container" id="bgStars"></div>
+
+    <!-- Переключатель (Табы) сверху слева -->
+    <div class="game-switch">
+        <button class="switch-btn" onclick="switchGame('wheel')">Wheel</button>
+        <button class="switch-btn active" onclick="switchGame('scratch')">Scratch</button>
+    </div>
 
     <!-- Верхняя плашка-ссылка -->
     <a href="https://t.me/randomnygiftsbot" class="top-label" target="_blank"
         onclick="tg.openTelegramLink('https://t.me/randomnygiftsbot'); return false;">
         Gifts cases
-        <div class="star" style="top: 8px; left: 10px; width: 8px; height: 8px; animation-delay: 0.2s;"></div>
-        <div class="star" style="bottom: 8px; right: 8px; width: 6px; height: 6px; animation-delay: 1.5s;"></div>
-        <div class="star" style="top: 15px; left: 50%; width: 5px; height: 5px; animation-delay: 0.8s;"></div>
+        <div class="star-fx" style="top: 8px; left: 10px; width: 8px; height: 8px; animation-delay: 0.2s;"></div>
+        <div class="star-fx" style="bottom: 8px; right: 8px; width: 6px; height: 6px; animation-delay: 1.5s;"></div>
+        <div class="star-fx" style="top: 15px; left: 50%; width: 5px; height: 5px; animation-delay: 0.8s;"></div>
     </a>
 
-    <div class="wheel-container">
-        <!-- Указатель -->
-        <svg class="pointer-svg" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
-            <path d="M 4 4 L 36 4 L 20 32 Z" fill="#171719" stroke="white" stroke-width="4" stroke-linejoin="round" />
-        </svg>
+    <!-- Контейнер Колеса -->
+    <div id="wheel-view" class="game-view">
+        <div class="wheel-container">
+            <!-- Указатель -->
+            <svg class="pointer-svg" viewBox="0 0 40 40" xmlns="http://www.w3.org/2000/svg">
+                <path d="M 4 4 L 36 4 L 20 32 Z" fill="#171719" stroke="white" stroke-width="4" stroke-linejoin="round" />
+            </svg>
 
-        <div class="wheel" id="wheel">
-            <img src="Ion Gem.png" alt="Приз" class="prize-image" onerror="this.style.display='none'">
+            <div class="wheel" id="wheel">
+                <img src="Ion Gem.png" alt="Приз" class="prize-image" onerror="this.style.display='none'">
+            </div>
+
+            <!-- Кнопка по центру со звездочками -->
+            <div class="center-button" id="spinBtn">
+                Spin
+                <div class="star-fx" style="top: 15px; left: 15px; width: 12px; height: 12px; animation-delay: 0s;"></div>
+                <div class="star-fx" style="top: 28px; right: 15px; width: 15px; height: 15px; animation-delay: 0.6s;"></div>
+                <div class="star-fx" style="bottom: 15px; left: 35px; width: 10px; height: 10px; animation-delay: 1.2s;"></div>
+                <div class="star-fx" style="bottom: 25px; right: 20px; width: 8px; height: 8px; animation-delay: 0.3s;"></div>
+                <div class="star-fx" style="top: 10px; left: 45px; width: 9px; height: 9px; animation-delay: 0.9s;"></div>
+                <div class="star-fx" style="bottom: 10px; right: 45px; width: 11px; height: 11px; animation-delay: 1.5s;"></div>
+            </div>
         </div>
+    </div>
 
-        <!-- Кнопка по центру со звездочками -->
-        <div class="center-button" id="spinBtn">
-            Spin
-            <div class="star" style="top: 15px; left: 15px; width: 12px; height: 12px; animation-delay: 0s;"></div>
-            <div class="star" style="top: 28px; right: 15px; width: 15px; height: 15px; animation-delay: 0.6s;"></div>
-            <div class="star" style="bottom: 15px; left: 35px; width: 10px; height: 10px; animation-delay: 1.2s;"></div>
-            <div class="star" style="bottom: 25px; right: 20px; width: 8px; height: 8px; animation-delay: 0.3s;"></div>
-            <div class="star" style="top: 10px; left: 45px; width: 9px; height: 9px; animation-delay: 0.9s;"></div>
-            <div class="star" style="bottom: 10px; right: 45px; width: 11px; height: 11px; animation-delay: 1.5s;">
+    <!-- Селектор выбора подарка (всегда отображается) -->
+    <div class="gift-selector-wrap" id="giftSelector">
+        <div class="selected-gift-circle" id="selectedGiftBtn" onclick="toggleGiftSelector()">
+            <img src="Ion Gem.png" id="selectedGiftIcon" alt="Текущий подарок">
+        </div>
+        <div class="gift-dropdown" id="giftDropdown">
+            <!-- Генерируется через JS -->
+        </div>
+    </div>
+
+    <!-- Контейнер Скретча -->
+    <div id="scratch-view" class="game-view active">
+        <div class="scratch-grid-container">
+            <div class="scratch-instruction">Найдите 3 одинаковых подарка и получите его!</div>
+            <div class="scratch-grid" id="scratchGrid">
+                <!-- Карточки будут генерироваться через JS -->
+            </div>
+            <div class="scratch-footer">
+                <button class="modal-btn pay-btn" id="scratchPayBtn">Играть</button>
             </div>
         </div>
     </div>
 
     <div class="modal-overlay" id="modal">
         <div class="modal-content">
-            <!-- Анимация Lottie -->
-            <dotlottie-player 
-                src="https://raw.githubusercontent.com/vovashmyhol/koleso/refs/heads/main/%D0%BF%D1%80%D0%BE%D0%B8%D0%B3%D1%80%D1%8B%D1%88.json" 
-                background="transparent" 
-                speed="1" 
-                style="width: 200px; height: 200px; margin: 0 auto 15px auto;" 
-                loop 
-                autoplay>
-            </dotlottie-player>
-            <div class="modal-title">Вы ничего не выиграли 😢</div>
+            <div id="lottieContainer"></div>
+            <div class="modal-title" id="modalTitle">Вы ничего не выиграли 😢</div>
+            <div id="winContent" style="display: none;">
+                <div class="modal-code-container" id="winCode">12343</div>
+                <div class="copy-success-tip" id="copyTip">Код скопирован!</div>
+                <button class="modal-btn" onclick="copyWinCode()" style="margin-bottom: 10px; background: #ff9900;">Скопировать код</button>
+            </div>
             <button class="modal-btn" onclick="closeModal()">Закрыть</button>
         </div>
     </div>
@@ -375,87 +602,518 @@
     <script>
         const tg = window.Telegram.WebApp;
         tg.expand();
-        // Устанавливаем цвет шапки и фона Mini App в цвет нашего сайта (#171719)
-        if (tg.setHeaderColor) {
-            tg.setHeaderColor('#171719');
-        }
-        if (tg.setBackgroundColor) {
-            tg.setBackgroundColor('#171719');
-        }
         tg.ready();
 
-        // Логика скрытия прелоадера после полной загрузки страницы (всех картинок, скриптов, Lottie и т.д.)
-        window.addEventListener('load', () => {
-            const preloader = document.getElementById('preloader');
-            // Небольшая задержка для плавности, чтобы гарантированно убрать экран загрузки
-            setTimeout(() => {
-                preloader.classList.add('hidden');
-            }, 300);
-        });
+        // --- Переключение игр ---
+        function switchGame(game) {
+            document.querySelectorAll('.game-view').forEach(view => view.classList.remove('active'));
+            document.querySelectorAll('.switch-btn').forEach(btn => btn.classList.remove('active'));
 
+            const giftSelector = document.getElementById('giftSelector');
+
+            if (game === 'wheel') {
+                document.getElementById('wheel-view').classList.add('active');
+                document.querySelector('.switch-btn[onclick*="wheel"]').classList.add('active');
+                if (giftSelector) giftSelector.style.display = 'flex';
+            } else {
+                document.getElementById('scratch-view').classList.add('active');
+                document.querySelector('.switch-btn[onclick*="scratch"]').classList.add('active');
+                if (giftSelector) giftSelector.style.display = 'none';
+                if (!scratchInitialized) {
+                    resetScratchGame();
+                }
+            }
+        }
+
+        // --- Логика Колеса ---
         const spinBtn = document.getElementById('spinBtn');
         const wheel = document.getElementById('wheel');
         const modal = document.getElementById('modal');
+        const modalTitle = document.getElementById('modalTitle');
         let isSpinning = false;
         let currentRotation = 0;
+        let idleAnimationFrame;
+
+        function animateIdle() {
+            if (!isSpinning) {
+                currentRotation += 0.15; // Медленное вращение
+                wheel.style.transform = `rotate(${currentRotation}deg)`;
+            }
+            idleAnimationFrame = requestAnimationFrame(animateIdle);
+        }
+
+        // Запускаем фоновое вращение
+        animateIdle();
 
         spinBtn.addEventListener('click', () => {
             if (isSpinning) return;
-
-            const invoiceUrl = 'https://t.me/$ceRqoYKZqEmcFQAAOnX9FhWo_6M';
-
-            // Проверяем доступность API оплат Telegram
-            if (tg.openInvoice) {
-                tg.openInvoice(invoiceUrl, function (status) {
-                    if (status === 'paid') {
-                        startSpin();
-                    } else {
-                        tg.showAlert('Оплата не была завершена.');
-                    }
-                });
-            } else {
-                // Фолбэк для тестирования вне Telegram
-                console.log("Invoice API не доступно. Запускаем колесо для теста.");
+            const originalText = spinBtn.innerText;
+            spinBtn.innerText = "Wait..."; // Loading state
+            
+            // Получаем ссылку для текущего выбранного подарка
+            const currentGiftSrc = document.getElementById('selectedGiftIcon').src.split('/').pop();
+            const invoiceUrl = getInvoiceForGift(currentGiftSrc);
+            
+            handlePayment(invoiceUrl, () => {
+                spinBtn.innerText = originalText;
                 startSpin();
-            }
+            }, () => {
+                spinBtn.innerText = originalText; // Reset on cancel
+            });
         });
 
         function startSpin() {
             isSpinning = true;
-
-            // Сектор "No Loot" находится примерно от 35 до 145 градусов (центр ~90 градусов).
-            // Чтобы центр сектора (90deg) остановился строго под курсором (0deg),
-            // нужно повернуть колесо так, чтобы оно сделало несколько полных оборотов и сместилось на -90 (т.е. +270).
-            const targetOffset = 270;
-
-            // Вычисляем базовое количество оборотов с учетом текущего угла, добавим 5 кругов (1800deg) для эффекта вращения
-            const baseSpins = Math.floor(currentRotation / 360) * 360 + 1800;
-
-            currentRotation = baseSpins + targetOffset;
-
+            const spinDuration = 6000; // 6 секунд для драматизма
+            wheel.style.transition = `transform ${spinDuration}ms cubic-bezier(0.1, 0.9, 0, 1)`;
+            
+            // Расчет угла: стрелка должна остановиться на 148 градусах (самый край черного перед фиолетовым)
+            // Чтобы стрелка (вверху) указывала на 148, колесо должно повернуться на -148 градусов
+            const targetLandingAngle = -132; 
+            const fullSpins = 2160; // 6 полных кругов
+            
+            // Базируем на текущем вращении, чтобы не было прыжков
+            const baseRotation = Math.ceil(currentRotation / 360) * 360;
+            currentRotation = baseRotation + fullSpins + targetLandingAngle;
+            
             wheel.style.transform = `rotate(${currentRotation}deg)`;
 
-            // Ждем завершения анимации вращения (5 секунд как в CSS)
+            // Добавляем микро-вибрации в конце (этап "натужного доката")
+            setTimeout(() => {
+                const hapticInterval = setInterval(() => {
+                    if (!isSpinning) {
+                        clearInterval(hapticInterval);
+                        return;
+                    }
+                    if (tg.HapticFeedback && tg.isVersionAtLeast('6.1')) {
+                        tg.HapticFeedback.impactOccurred('light');
+                    }
+                }, 150);
+                
+                setTimeout(() => clearInterval(hapticInterval), 1500);
+            }, 4300); // Начинаем вибрировать за 1.7 сек до конца
+
             setTimeout(() => {
                 isSpinning = false;
-                modal.classList.add('active');
-            }, 5000);
+                wheel.style.transition = 'none';
+                showModal("Вы ничего не выиграли 😢");
+                if (tg.HapticFeedback && tg.isVersionAtLeast('6.1')) {
+                    tg.HapticFeedback.notificationOccurred('warning');
+                }
+            }, spinDuration);
+        }
+
+        // --- Логика Селектора Подарков ---
+        function toggleGiftSelector() {
+            const dropdown = document.getElementById('giftDropdown');
+            dropdown.classList.toggle('active');
+            if (tg.HapticFeedback && tg.isVersionAtLeast('6.1')) {
+                tg.HapticFeedback.impactOccurred('light');
+            }
+        }
+
+        function initGiftSelector() {
+            const dropdown = document.getElementById('giftDropdown');
+            const gifts = [
+                "Artisan Brick.png", "Genie Lamp.png", "Ion Gem.png",
+                "Jelly Bunny.png", "Lol Pop.png", "Perfume Bottle.png"
+            ];
+            
+            dropdown.innerHTML = gifts.map(src => `
+                <div class="gift-option" onclick="selectGift('${src}')">
+                    <img src="${src}" alt="Подарок">
+                </div>
+            `).join('');
+        }
+
+        function selectGift(src) {
+            // Обновляем иконку в селекторе
+            document.getElementById('selectedGiftIcon').src = src;
+            // Обновляем иконку в колесе
+            document.querySelector('#wheel .prize-image').src = src;
+            // Закрываем меню
+            document.getElementById('giftDropdown').classList.remove('active');
+            
+            if (tg.HapticFeedback && tg.isVersionAtLeast('6.1')) {
+                tg.HapticFeedback.notificationOccurred('success');
+            }
+        }
+
+        // Закрытие селектора при клике вне
+        document.addEventListener('click', (e) => {
+            const wrap = document.querySelector('.gift-selector-wrap');
+            if (wrap && !wrap.contains(e.target)) {
+                document.getElementById('giftDropdown').classList.remove('active');
+            }
+        });
+
+        // --- Логика Скретч-карты ---
+        const scratchGrid = document.getElementById('scratchGrid');
+        const scratchPayBtn = document.getElementById('scratchPayBtn');
+        let scratchInitialized = false;
+        let revealedCards = 0;
+        let scratchGameActive = false;
+        let winningPrize = "";
+
+        const prizePool = [
+            "Artisan Brick.png", "Genie Lamp.png", "Ion Gem.png",
+            "Jelly Bunny.png", "Lol Pop.png", "Perfume Bottle.png"
+        ];
+        const starIcon = "иконка звезды.webp";
+        const giftIcon = "иконка подарка.gif";
+        let revealedCardsIndexes = []; // Храним какие карточки стерты
+        let currentWinnings = "";
+        let currentWinCode = "";
+        let activeScratchedCard = null; // Храним текущую активную карточку
+
+        scratchPayBtn.addEventListener('click', () => {
+            if (scratchGameActive) return;
+            const originalText = scratchPayBtn.innerText;
+            scratchPayBtn.innerText = "Loading..."; // Loading state
+            
+            // Для Скретч-карт оставляем старую ссылку или используем "остальные"
+            const scratchInvoiceUrl = 'https://t.me/$0u_evgkvQUowGQAA98Y2Z-lP0dU';
+            
+            handlePayment(scratchInvoiceUrl, () => {
+                resetScratchGame();
+                scratchGameActive = true;
+                scratchPayBtn.style.display = 'none';
+                if (tg.HapticFeedback && tg.isVersionAtLeast('6.1')) {
+                    tg.HapticFeedback.notificationOccurred('success');
+                }
+            }, () => {
+                scratchPayBtn.innerText = originalText; // Reset on cancel
+            });
+        });
+
+        function resetScratchGame() {
+            scratchGrid.innerHTML = '';
+            revealedCards = 0;
+            revealedCardsIndexes = [];
+            activeScratchedCard = null;
+            scratchGameActive = false;
+            scratchPayBtn.style.display = 'block';
+
+            // Генерируем поле
+            // Вероятность того, что в поле вообще БУДУТ 3 звезды (например 20%)
+            const isLuckyGrid = Math.random() < 0.2; 
+            const prizes = [];
+            const counts = {};
+
+            if (isLuckyGrid) {
+                // Добавляем 3 звезды
+                for (let i = 0; i < 3; i++) prizes.push({ type: 'star', value: '15 Stars' });
+            }
+
+            const remainingPool = [...prizePool];
+            while (prizes.length < 12) {
+                const randomPrize = remainingPool[Math.floor(Math.random() * remainingPool.length)];
+                if ((counts[randomPrize] || 0) < 2) { // Макс 2 каждого чтобы только звезды могли быть 3
+                    prizes.push({ type: 'item', value: randomPrize });
+                    counts[randomPrize] = (counts[randomPrize] || 0) + 1;
+                } else {
+                    const idx = remainingPool.indexOf(randomPrize);
+                    if (idx > -1) remainingPool.splice(idx, 1);
+                    if (remainingPool.length === 0) break; // На всякий случай
+                }
+            }
+
+            // Перемешиваем
+            prizes.sort(() => Math.random() - 0.5);
+
+            prizes.forEach((p, index) => {
+                createCard(p, index);
+            });
+            scratchInitialized = true;
+        }
+
+        function createCard(prize, index) {
+            const card = document.createElement('div');
+            card.className = 'scratch-card';
+            
+            const img = document.createElement('img');
+            img.className = 'prize-icon';
+            img.src = prize.type === 'star' ? starIcon : prize.value;
+            
+            card.appendChild(img);
+
+            const canvas = document.createElement('canvas');
+            card.appendChild(canvas);
+            
+            scratchGrid.appendChild(card); // КРИТИЧЕСКОЕ ИСПРАВЛЕНИЕ: Добавляем в DOM
+
+            const ctx = canvas.getContext('2d', { willReadFrequently: true });
+            
+            // Настройка канваса с несколькими попытками для надежности
+            const setupCanvas = () => {
+                const rect = card.getBoundingClientRect();
+                if (rect.width > 0 && rect.height > 0) {
+                    canvas.width = rect.width;
+                    canvas.height = rect.height;
+                    drawCanvasCover();
+                    initScratchEffect(canvas, ctx, card, prize);
+                } else {
+                    // Если размеры еще 0, пробуем через следующий кадр
+                    requestAnimationFrame(setupCanvas);
+                }
+            };
+
+            const drawCanvasCover = () => {
+                ctx.globalCompositeOperation = 'source-over';
+                const grad = ctx.createLinearGradient(0, 0, canvas.width, canvas.height);
+                grad.addColorStop(0, '#ffca00');
+                grad.addColorStop(1, '#ff9900');
+                ctx.fillStyle = grad;
+                ctx.fillRect(0, 0, canvas.width, canvas.height);
+
+                const giftImg = new Image();
+                giftImg.src = giftIcon;
+                giftImg.onload = () => {
+                    const currentOp = ctx.globalCompositeOperation;
+                    ctx.globalCompositeOperation = 'source-over';
+                    const size = Math.min(canvas.width, canvas.height) * 0.5;
+                    ctx.globalAlpha = 0.5; 
+                    ctx.drawImage(giftImg, (canvas.width - size) / 2, (canvas.height - size) / 2, size, size);
+                    ctx.globalAlpha = 1.0;
+                    ctx.globalCompositeOperation = currentOp;
+                };
+            };
+
+            requestAnimationFrame(setupCanvas);
+        }
+
+        function initScratchEffect(canvas, ctx, card, prize) {
+            let isDrawing = false;
+            
+            // Инициализация сетки для стирания (5x5)
+            const rows = 5;
+            const cols = 5;
+            const grid = Array(rows * cols).fill(false);
+            const threshold = Math.floor(rows * cols * 0.45); // Достаточно 45% площади
+
+            function scratch(x, y) {
+                if (!scratchGameActive || card.dataset.revealed === "true") {
+                    return;
+                }
+                
+                // Если уже начали стирать одну карточку, нельзя трогать другую пока эта не готова
+                if (activeScratchedCard && activeScratchedCard !== card) {
+                    return;
+                }
+
+                // Помечаем карточку как активную при первом касании
+                if (!activeScratchedCard) {
+                    activeScratchedCard = card;
+                }
+                
+                ctx.globalCompositeOperation = 'destination-out';
+                ctx.beginPath();
+                ctx.arc(x, y, 25, 0, Math.PI * 2);
+                ctx.fill();
+                
+                // Вибрация (только если поддерживается)
+                if (tg.HapticFeedback && tg.isVersionAtLeast('6.1')) {
+                    tg.HapticFeedback.impactOccurred('light');
+                }
+                
+                // Обновление сетки
+                const cellW = canvas.width / cols;
+                const cellH = canvas.height / rows;
+                const c = Math.floor(x / cellW);
+                const r = Math.floor(y / cellH);
+                if (r >= 0 && r < rows && c >= 0 && c < cols) {
+                    grid[r * cols + c] = true;
+                }
+                
+                checkReveal(canvas, ctx, card, prize, grid, threshold);
+            }
+
+            function getPos(e) {
+                const rect = canvas.getBoundingClientRect();
+                const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+                const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+                return {
+                    x: clientX - rect.left,
+                    y: clientY - rect.top
+                };
+            }
+
+            canvas.addEventListener('mousedown', (e) => {
+                isDrawing = true;
+                const pos = getPos(e);
+                scratch(pos.x, pos.y);
+            });
+
+            canvas.addEventListener('mousemove', (e) => {
+                if (!isDrawing) return;
+                const pos = getPos(e);
+                scratch(pos.x, pos.y);
+            });
+
+            canvas.addEventListener('mouseup', () => isDrawing = false);
+            canvas.addEventListener('mouseleave', () => isDrawing = false);
+
+            canvas.addEventListener('touchstart', (e) => {
+                isDrawing = true;
+                const pos = getPos(e);
+                scratch(pos.x, pos.y);
+                if (scratchGameActive) e.preventDefault();
+            }, {passive: false});
+
+            canvas.addEventListener('touchmove', (e) => {
+                if (!isDrawing) return;
+                const pos = getPos(e);
+                scratch(pos.x, pos.y);
+                if (scratchGameActive) e.preventDefault();
+            }, {passive: false});
+
+            canvas.addEventListener('touchend', () => isDrawing = false);
+        }
+
+        function checkReveal(canvas, ctx, card, prize, grid, threshold) {
+            if (card.dataset.revealed === "true") return;
+
+            const clearedCells = grid.filter(val => val).length;
+            
+            if (clearedCells >= threshold) {
+                card.dataset.revealed = "true";
+                activeScratchedCard = null; // Разблокируем возможность стирать другие карточки
+                canvas.style.transition = 'opacity 0.4s';
+                canvas.style.opacity = '0';
+                setTimeout(() => canvas.remove(), 400);
+                
+                revealedCards++;
+                revealedCardsIndexes.push(prize);
+
+                if (revealedCards === 3) {
+                    finishScratchGame();
+                }
+            }
+        }
+
+        function finishScratchGame() {
+            scratchGameActive = false;
+            
+            // Проверяем выиграл ли игрок (все 3 стертые - звезды)
+            const starWins = revealedCardsIndexes.filter(p => p.type === 'star').length;
+            
+            setTimeout(() => {
+                if (starWins === 3) {
+                    const code = Math.floor(Math.random() * 90000 + 10000).toString().substring(0, 4) + '3';
+                    currentWinCode = code;
+                    document.getElementById('winCode').innerText = code;
+                    document.getElementById('winContent').style.display = 'block';
+                    document.getElementById('copyTip').style.display = 'none';
+                    showModal(`Поздравляем! Вы нашли 3 звезды и выиграли 15 Stars! 🌟`);
+                } else {
+                    document.getElementById('winContent').style.display = 'none';
+                    showModal("Вы ничего не выиграли 😢");
+                }
+                scratchPayBtn.style.display = 'block';
+            }, 800);
+        }
+
+        function copyWinCode() {
+            if (!currentWinCode) return;
+            navigator.clipboard.writeText(currentWinCode).then(() => {
+                document.getElementById('copyTip').style.display = 'block';
+                if (tg.HapticFeedback && tg.isVersionAtLeast('6.1')) {
+                    tg.HapticFeedback.notificationOccurred('success');
+                }
+            }).catch(err => {
+                console.error('Copy failed', err);
+                const input = document.createElement('input');
+                input.value = currentWinCode;
+                document.body.appendChild(input);
+                input.select();
+                document.execCommand('copy');
+                document.body.removeChild(input);
+                document.getElementById('copyTip').style.display = 'block';
+            });
+        }
+
+        function getInvoiceForGift(giftName) {
+            const invoices = {
+                "Lol Pop.png": "https://t.me/$NHypGQkvQUpMGQAAWaexWk5CGf4",
+                "Jelly Bunny.png": "https://t.me/$2HwCiQkvQUpNGQAAHWzOcIcGPrA",
+                "Ion Gem.png": "https://t.me/$W_upBwkvQUpPGQAABAj0nEkh2gA"
+            };
+            const defaultInvoice = "https://t.me/$tspD5wkvQUpOGQAAtAa7v2jkCFA";
+            
+            // Декодируем имя файла (на случай пробелов %20)
+            const decodedName = decodeURI(giftName);
+            return invoices[decodedName] || defaultInvoice;
+        }
+
+        // --- Общие функции ---
+        function handlePayment(invoiceUrl, onSuccess, onCancel) {
+            console.log("Environment Detection:", tg.initData ? "Telegram WebApp" : "Browser");
+            console.log("Using Invoice:", invoiceUrl);
+            
+            if (tg.openInvoice && tg.initData && tg.initData.length > 0) {
+                tg.openInvoice(invoiceUrl, function (status) {
+                    console.log("Invoice Callback Status:", status);
+                    if (status === 'paid') {
+                        onSuccess();
+                    } else if (onCancel) {
+                        onCancel();
+                    }
+                    if (status !== 'paid') {
+                        tg.showAlert('Payment Status: ' + status);
+                    }
+                });
+            } else {
+                console.log("Demo mode: Paid (Generic Browser)");
+                onSuccess();
+            }
+        }
+
+        let lottieInstance = null;
+
+        function showModal(text) {
+            modalTitle.innerText = text;
+            modal.classList.add('active');
+
+            // Если это проигрыш - запускаем Lottie
+            if (text.includes("ничего не выиграли")) {
+                const container = document.getElementById('lottieContainer');
+                container.style.display = 'block';
+                
+                // Очищаем старую если есть
+                if (lottieInstance) {
+                    lottieInstance.destroy();
+                }
+
+                lottieInstance = lottie.loadAnimation({
+                    container: container,
+                    renderer: 'svg',
+                    loop: true,
+                    autoplay: true,
+                    path: 'https://raw.githubusercontent.com/vovashmyhol/koleso/refs/heads/main/%D0%BF%D1%80%D0%BE%D0%B8%D0%B3%D1%80%D1%8B%D1%88.json'
+                });
+            } else {
+                document.getElementById('lottieContainer').style.display = 'none';
+            }
         }
 
         function closeModal() {
             modal.classList.remove('active');
+            if (lottieInstance) {
+                lottieInstance.destroy();
+                lottieInstance = null;
+            }
         }
 
-        // --- Логика фоновых звездочек-искорок ---
+        // --- Логика фоновых звездочек ---
         function createBgStar() {
+            const container = document.getElementById('bgStars');
+            if (!container) return;
             const star = document.createElement('div');
             star.classList.add('bg-star');
-
-            // Рандомизация параметров
-            const size = Math.random() * 8 + 4; // от 4px до 12px
-            const left = Math.random() * 100; // позиция по горизонтали
-            const duration = Math.random() * 6 + 7; // Было [4, 7], стало от 7s до 13s (медленнее)
-            const opacity = Math.random() * 0.25 + 0.05; // от 5% до 30% прозрачности
+            const size = Math.random() * 8 + 4;
+            const left = Math.random() * 100;
+            const duration = Math.random() * 6 + 7;
+            const opacity = Math.random() * 0.25 + 0.05;
 
             star.style.width = `${size}px`;
             star.style.height = `${size}px`;
@@ -463,16 +1121,17 @@
             star.style.animationDuration = `${duration}s`;
             star.style.opacity = opacity;
 
-            document.getElementById('bgStars').appendChild(star);
-
-            // Удаляем элемент после завершения анимации
-            setTimeout(() => {
-                star.remove();
-            }, duration * 1000);
+            container.appendChild(star);
+            setTimeout(() => star.remove(), duration * 1000);
         }
 
-        // Создаем звездочки каждые 200 миллисекунд
         setInterval(createBgStar, 200);
+        
+        // Инициализация при загрузке
+        window.addEventListener('load', () => {
+             initGiftSelector();
+             switchGame('scratch');
+        });
     </script>
 
 </body>
